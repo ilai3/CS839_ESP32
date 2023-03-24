@@ -10,6 +10,12 @@
 *********/
 
 #include <WiFi.h>
+#include <ctime>
+//#include "HTTPRequest.hpp"
+#include <HTTPClient.h>
+#include <iostream>
+
+using namespace std;
 
 // Set GPIOs for LED and reedswitch
 const int sensorPin = 14;
@@ -30,15 +36,15 @@ unsigned long previousMillis = 0;
 const long interval = 1500;
 
 const char* ssid = "Grass iPhone";
-const char* password = "";
+const char* password = "0933776600";
 const char* host = "maker.ifttt.com";
 const char* apiKey = "bspdsOIp2jjUnwIyShFUqi";
 
 // Runs whenever the reedswitch changes state
 ICACHE_RAM_ATTR void changeSensorStatus() {
-  if (Sensorstate == false){
+//  if (Sensorstate == false){
     changeState = true;
-  }
+//  }
 }
 
 ICACHE_RAM_ATTR void changeButtonStatusEvent() {
@@ -77,36 +83,26 @@ void setup() {
 void loop() {
   if (changeState){  
       Sensorstate = !Sensorstate;
-      if(Sensorstate) {
-        doorState = "closed";
+    HTTPClient http;
+  
+    http.begin("https://cabc-72-33-0-141.ngrok.io"); //Specify the URL
+    int httpCode = http.GET();                                        //Make the request
+  
+    if (httpCode > 0) { //Check for the returning code
+  
+        String payload = http.getString();
+        Serial.println(httpCode);
+        Serial.println(payload);
       }
-      else{
-        doorState = "open";
-      }
-      digitalWrite(led, Sensorstate);
+  
+    else {
+      Serial.println("Error on HTTP request");
+    }
+  
+    http.end(); //Free the resources
+
       changeState = false;
-      Sensorstate = false;
-      //Send email
-      Serial.print("connecting to ");
-      Serial.println(host);
-      WiFiClient client;
-      const int httpPort = 80;
-      if (!client.connect(host, httpPort)) {
-        Serial.println("connection failed");
-        return;
-      }
-
-      String url = "/trigger/news/json/with/key/cdMGnKaKscME3ACdrbJQgo";
-
-      Serial.print("Requesting URL: ");
-      Serial.println(url);
-      client.print(String("POST ") + url + " HTTP/1.1\r\n" +
-                     "Host: " + host + "\r\n" + 
-                     "Content-Type: application/x-www-form-urlencoded\r\n" + 
-                     "Content-Length: 13\r\n\r\n" +
-                     "value1=" + doorState + "\r\n");
-       delay(30000);
-       client.stop();
+      
   }
   if (changeButtonState){
       digitalWrite(led, false);
